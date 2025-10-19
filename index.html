@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DIGIT RECOGNIZER</title>
+    <style>
+        body {
+            font-family: 'Times New Roman';
+            text-align: center;
+            margin-top: 30px;
+        }
+        canvas {
+            border: 20px solid #000;
+            background-color: #fff;
+            cursor: crosshair;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+        #results {
+            margin-top: 20px;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Draw a Digit (0–9)</h2>
+    <canvas id="canvas" width="280" height="280"></canvas><br>
+    <button id="clear">Clear</button>
+    <button id="predict">Predict</button>
+    <h3 id="results"></h3>
+
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const results = document.getElementById("results");
+
+       
+        ctx.lineWidth = 16;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "black";
+
+        let drawing = false;
+
+    
+    canvas.onmousedown = e => {
+        drawing = true;
+        
+        ctx.beginPath();
+        
+        ctx.moveTo(e.offsetX, e.offsetY);
+    };
+
+    
+    canvas.onmouseup = () => drawing = false;
+    canvas.onmouseleave = () => drawing = false;
+
+   
+    canvas.onmousemove = e => {
+        if (!drawing) return;
+        
+       
+        ctx.lineTo(e.offsetX, e.offsetY);
+        
+    
+        ctx.stroke();
+        
+      
+        ctx.beginPath();
+        ctx.moveTo(e.offsetX, e.offsetY);
+    };
+
+     
+        document.getElementById("clear").onclick = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            results.textContent = "";
+        };
+
+   function preprocessCanvas(canvas) {
+    const tmp = document.createElement("canvas");
+    tmp.width = 28;
+    tmp.height = 28;
+    const tmpCtx = tmp.getContext("2d");
+    
+
+    tmpCtx.fillStyle = '#FFFFFF';
+    tmpCtx.fillRect(0, 0, 28, 28);
+ 
+    
+    tmpCtx.drawImage(canvas, 0, 0, 28, 28);
+  
+    return tmp.toDataURL("image/png"); 
+}
+
+        document.getElementById("predict").onclick = async () => {
+            const image = preprocessCanvas(canvas);
+            results.textContent = "PREDICTING...";
+
+            try {
+                const res = await fetch("/predict", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({image})
+                });
+                const data = await res.json();
+                results.textContent = "PREDICTED DIGIT: " + data.prediction;
+            } catch(err) {
+                results.textContent = "Error connecting to server.";
+            }
+        };
+    </script>
+</body>
+</html>
